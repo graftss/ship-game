@@ -1,6 +1,7 @@
 import Projectile from './Projectile';
+import { rotateVector2 } from './utils';
 
-const speed = 20;
+const speed = 12;
 
 export default class ProjectileEmitter {
   private projectiles: Phaser.GameObjects.Group;
@@ -18,28 +19,57 @@ export default class ProjectileEmitter {
     this.projectiles = scene.add.group([]);
   }
 
+  private getNextProjectileCount(): number {
+    return 7;
+  }
+
+  private getProjAngleSpacing(
+    focusDistance: number,
+    projectileCount: number,
+  ): number {
+    const low = 50;
+    const high = 300;
+    const t = 1 - (Phaser.Math.Clamp(focusDistance, low, high) - low) / (high - low);
+
+    const lowArc = Math.PI / 12;
+    const highArc = Math.PI / 3;
+    const a = t * t * (highArc - lowArc) + lowArc;
+
+    return a / projectileCount;
+  }
+
   private fire() {
     const origin = this.getOrigin();
     const focus = this.getFocus();
+    const projCount = this.getNextProjectileCount();
 
-    const v = new Phaser.Math.Vector2(
+    const vFocus = new Phaser.Math.Vector2(
       focus.x - origin.x,
       focus.y - origin.y,
     );
+    const focusDistance = vFocus.length();
 
-    const l = v.length();
-    if (l < .1) return;
+    // don't fire if the focus point is too close to the origin
+    if (focusDistance < .1) return;
 
-    v.scale(speed / l);
+    const projAngleSpacing = this.getProjAngleSpacing(focusDistance, projCount);
+    vFocus.scale(speed / focusDistance);
 
-    const proj = new Projectile(this.scene, {
-      x: origin.x,
-      y: origin.y,
-      vx: v.x,
-      vy: v.y,
-    });
+    for (let i = 0; i < projCount; i++) {
+      const v = rotateVector2(
+        projAngleSpacing * (i - (projCount - 1) / 2),
+        vFocus,
+      );
 
-    this.projectiles.add(proj);
+      const proj = new Projectile(this.scene, {
+        x: origin.x,
+        y: origin.y,
+        vx: v.x,
+        vy: v.y,
+      });
+
+      this.projectiles.add(proj);
+    }
   }
 
   public startFire(
