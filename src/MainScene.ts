@@ -13,11 +13,15 @@ export default class MainScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image("ship", "../assets/games/endlessRunner/head.png");
+    this.load.image("projectile", "../assets/games/endlessRunner/head.png");
   }
 
   create(): void {
     this.ship = new Ship(this, 50, 50);
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    this.input.on('pointerdown', pointer => this.ship.startFire(pointer));
+    this.input.on('pointerup', () => this.ship.stopFire());
   }
 
   update(): void {
